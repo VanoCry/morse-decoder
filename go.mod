@@ -1,3 +1,3 @@
-module github.com/Yandex-Practicum/go1fl-sprint6-final
+module morse_decoder_vanocry
 
-go 1.24.0
+go 1.22.2

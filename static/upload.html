@@ -1,0 +1,226 @@
+<!-- static/upload.html -->
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+    <link rel="stylesheet" type="text/css" href="/static/upload_style.css">
+    <title>Результат конвертации - Морзе конвертер</title>
+</head>
+<body>
+    <!-- Анимированные эмодзи на заднем плане -->
+    <div class="emoji-background" id="emojiBackground">
+        <div class="floating-emoji">📝</div>
+        <div class="floating-emoji">⚡</div>
+        <div class="floating-emoji">🤖</div>
+        <div class="floating-emoji">📝</div>
+        <div class="floating-emoji">⚡</div>
+        <div class="floating-emoji">🤖</div>
+        <div class="floating-emoji">📝</div>
+        <div class="floating-emoji">⚡</div>
+        <div class="floating-emoji">🤖</div>
+        <div class="floating-emoji">📝</div>
+    </div>
+
+    <div class="result-container" id="resultContainer">
+        <!-- Контейнер для результата будет заполнен JavaScript -->
+        <div class="loading" id="loading">
+            <div class="loading-spinner"></div>
+            <p>Конвертация файла...</p>
+        </div>
+        
+        <div id="resultContent"></div>
+    </div>
+
+    <script>
+        // Данные из URL
+        function getQueryParams() {
+            const params = new URLSearchParams(window.location.search);
+            return {
+                mode: params.get('mode'),
+                filename: params.get('filename'),
+                savedAs: params.get('savedAs'),
+                filepath: params.get('filepath'),
+                result: params.get('result')
+            };
+        }
+
+        // copyToClipboard функция для копирования текста
+        function copyToClipboard(text) {
+            navigator.clipboard.writeText(text).then(() => {
+                const notification = document.createElement('div');
+                notification.className = 'copy-notification';
+                notification.textContent = '✅ Скопировано в буфер обмена';
+                document.body.appendChild(notification);
+                
+                setTimeout(() => {
+                    notification.remove();
+                }, 3000);
+            });
+        }
+
+        // Функция для определения режима по имени файла
+        function getModeInfo(savedAs) {
+            if (savedAs.includes('text_to_morse')) {
+                return {
+                    name: 'Текст → Морзе',
+                    icon: '📝',
+                    color: '#667eea',
+                    emoji: '📝'
+                };
+            } else if (savedAs.includes('morse_to_text')) {
+                return {
+                    name: 'Морзе → Текст',
+                    icon: '⚡',
+                    color: '#764ba2',
+                    emoji: '⚡'
+                };
+            } else {
+                return {
+                    name: 'Автоматический режим',
+                    icon: '🤖',
+                    color: '#4CAF50',
+                    emoji: '🤖'
+                };
+            }
+        }
+
+        // Функция для отображения результата
+        function displayResult(data) {
+            const modeInfo = getModeInfo(data.savedAs || '');
+            
+            // Эмодзи на заднем плане
+            updateBackgroundEmojis(modeInfo.emoji);
+            
+            const html = `
+                <h1>${modeInfo.icon} Конвертация завершена!</h1>
+                <div class="success-badge">
+                    ✅ Файл успешно сконвертирован
+                </div>
+                
+                <div class="info-grid">
+                    <div class="info-card">
+                        <div class="label">Режим конвертации</div>
+                        <div class="value">${modeInfo.icon} ${modeInfo.name}</div>
+                    </div>
+                    
+                    <div class="info-card">
+                        <div class="label">Исходный файл</div>
+                        <div class="value">${data.filename || 'Неизвестно'}</div>
+                    </div>
+                    
+                    <div class="info-card">
+                        <div class="label">Сохранен как</div>
+                        <div class="value">${data.savedAs || 'Неизвестно'}</div>
+                    </div>
+                    
+                    <div class="info-card">
+                        <div class="label">Размер файла</div>
+                        <div class="value">${data.result ? Math.round(data.result.length / 1024) : 0} KB</div>
+                    </div>
+                </div>
+                
+                <div class="file-path">
+                    <strong>📂 Полный путь:</strong> ${data.filepath || 'Неизвестно'}
+                </div>
+                
+                <div class="result-section">
+                    <h3>
+                        ${modeInfo.icon} Результат конвертации
+                        <button class="btn-copy" onclick="copyToClipboard(\`${data.result.replace(/`/g, '\\`')}\`)">
+                            📋 Копировать
+                        </button>
+                    </h3>
+                    <div class="result-content ${modeInfo.name === 'Текст → Морзе' ? 'morse-code' : ''}">${data.result || 'Нет данных'}
+                    </div>
+                </div>
+                
+                <div class="button-group">
+                    <a href="/" class="btn btn-primary">
+                        ← Конвертировать еще
+                    </a>
+                    <a href="#" onclick="window.print()" class="btn btn-secondary">
+                        🖨️ Сохранить как PDF
+                    </a>
+                </div>
+            `;
+            
+            document.getElementById('resultContent').innerHTML = html;
+        }
+
+        // Функция для обновления эмодзи на заднем плане
+        function updateBackgroundEmojis(emoji) {
+            const emojis = ['📝', '⚡', '🤖', '📝', '⚡', '🤖', '📝', '⚡', '🤖', '📝'];
+            const floatingEmojis = document.querySelectorAll('.floating-emoji');
+            
+            floatingEmojis.forEach((el, index) => {
+                el.style.transition = 'opacity 0.5s ease';
+                el.style.opacity = '0';
+                
+                setTimeout(() => {
+                    if (emoji) {
+                        el.textContent = emoji;
+                    } else {
+                        el.textContent = emojis[index % emojis.length];
+                    }
+                    el.style.opacity = '0.15';
+                }, 300);
+            });
+        }
+
+        // Функция для загрузки результата с сервера
+        async function fetchResult() {
+            const loading = document.getElementById('loading');
+            const resultContent = document.getElementById('resultContent');
+            
+            loading.style.display = 'block';
+            resultContent.innerHTML = '';
+            
+            try {
+                // Данные из локального хранилища (либо сессии)
+                const resultData = sessionStorage.getItem('conversionResult');
+                
+                if (resultData) {
+                    const data = JSON.parse(resultData);
+                    displayResult(data);
+                    // Очищаем после отображения
+                    // sessionStorage.removeItem('conversionResult');
+                } else {
+                    // Если нет данных, ошибка
+                    resultContent.innerHTML = `
+                        <div class="error-message">
+                            <h3>❌ Ошибка</h3>
+                            <p>Данные о конвертации не найдены. Пожалуйста, вернитесь на главную и попробуйте снова.</p>
+                            <a href="/" class="btn btn-primary" style="margin-top: 1rem;">← На главную</a>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                console.error('Ошибка:', error);
+                resultContent.innerHTML = `
+                    <div class="error-message">
+                        <h3>❌ Ошибка загрузки</h3>
+                        <p>${error.message}</p>
+                        <a href="/" class="btn btn-primary" style="margin-top: 1rem;">← На главную</a>
+                    </div>
+                `;
+            } finally {
+                loading.style.display = 'none';
+            }
+        }
+
+        // Загрузка результатов
+        document.addEventListener('DOMContentLoaded', fetchResult);
+
+        // Эфектики
+        document.querySelector('.result-container').addEventListener('mouseenter', function() {
+            this.style.transform = 'scale(1.01)';
+        });
+        
+        document.querySelector('.result-container').addEventListener('mouseleave', function() {
+            this.style.transform = 'scale(1)';
+        });
+    </script>
+</body>
+</html>
