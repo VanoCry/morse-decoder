@@ -80,7 +80,7 @@ func UploadHandler(w http.ResponseWriter, r *http.Request) {
 		mode = 2
 	}
 
-	// ПОЛУЧАЕМ ФАЙЛ ИЗ ФОРМЫ - НЕ С ДИСКА!
+	// получаем файл из формы
 	file, _, err := r.FormFile("myFile")
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
