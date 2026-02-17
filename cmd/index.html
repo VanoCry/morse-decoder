@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+    <link rel="stylesheet" type="text/css" href="/cmd/index_style.css">
+    <title>Загрузка файлов - Морзе конвертер</title>
+</head>
+<body>
+    <!-- Анимированные эмодзи на заднем плане -->
+    <div class="emoji-background" id="emojiBackground">
+        <div class="floating-emoji">📝</div>
+        <div class="floating-emoji">⚡</div>
+        <div class="floating-emoji">🤖</div>
+        <div class="floating-emoji">📝</div>
+        <div class="floating-emoji">⚡</div>
+        <div class="floating-emoji">🤖</div>
+        <div class="floating-emoji">📝</div>
+        <div class="floating-emoji">⚡</div>
+        <div class="floating-emoji">🤖</div>
+        <div class="floating-emoji">📝</div>
+    </div>
+    <div class="upload-container">
+        <h1>📁 Морзе конвертер</h1>
+        <div class="subtitle">Загрузите текстовый файл для конвертации</div>
+        
+        <form enctype="multipart/form-data" action="http://localhost:8080/upload" method="post">
+            <div class="file-input-wrapper">
+                <input type="file" name="myFile" id="fileInput" accept=".txt" />
+            </div>
+            
+            <!-- Переключатели режимов -->
+            <div class="mode-selector">
+                <button type="button" class="mode-btn" data-mode="text-to-morse">Текст → Морзе</button>
+                <button type="button" class="mode-btn" data-mode="morse-to-text">Морзе → Текст</button>
+                <button type="button" class="mode-btn active" data-mode="auto">Авто</button>
+            </div>
+            
+            <!-- Скрытое поле для передачи режима на бэкенд -->
+            <input type="hidden" name="mode" id="modeInput" value="auto" />
+            
+            <!-- Информация о текущем режиме -->
+            <div class="mode-info" id="modeInfo">
+                <i>🤖 Автоматический режим</i>
+                Система сама определит, является ли текст морзе или обычным текстом
+            </div>
+            
+            <input type="submit" value="Конвертировать" />
+        </form>
+        
+        <div class="file-info" id="fileInfo">
+            Выберите .txt файл для конвертации (не более 10MB)
+        </div>
+    </div>
+    
+    <script>
+        const fileInput = document.getElementById('fileInput');
+        const fileInfo = document.getElementById('fileInfo');
+        const modeBtns = document.querySelectorAll('.mode-btn');
+        const modeInput = document.getElementById('modeInput');
+        const modeInfo = document.getElementById('modeInfo');
+        const emojiBackground = document.getElementById('emojiBackground');
+        
+        // Массивы эмодзи для разных режимов
+        const emojiSets = {
+            'text-to-morse': ['📝', '✏️', '📄', '🔤', '📝', '✏️', '📄', '🔤', '📝', '✏️'],
+            'morse-to-text': ['⚡', '🔌', '📡', '⚡', '🔌', '📡', '⚡', '🔌', '📡', '⚡'],
+            'auto': ['🤖', '🔄', '⚙️', '🤖', '🔄', '⚙️', '🤖', '🔄', '⚙️', '🤖']
+        };
+        
+        // Информация о режимах
+        const modeDescriptions = {
+            'text-to-morse': {
+                icon: '📝',
+                title: 'Режим: Текст → Морзе',
+                description: 'Обычный текст будет преобразован в азбуку Морзе'
+            },
+            'morse-to-text': {
+                icon: '⚡',
+                title: 'Режим: Морзе → Текст',
+                description: 'Код Морзе будет преобразован в обычный текст'
+            },
+            'auto': {
+                icon: '🤖',
+                title: 'Автоматический режим',
+                description: 'Система сама определит, является ли текст морзе или обычным текстом'
+            }
+        };
+        
+        // Функция для обновления эмодзи на заднем плане
+        function updateBackgroundEmojis(mode) {
+            const emojis = emojiSets[mode];
+            const floatingEmojis = document.querySelectorAll('.floating-emoji');
+            
+            floatingEmojis.forEach((emoji, index) => {
+                // Плавно меняем эмодзи
+                emoji.style.transition = 'opacity 0.5s ease';
+                emoji.style.opacity = '0';
+                
+                setTimeout(() => {
+                    emoji.textContent = emojis[index % emojis.length];
+                    emoji.style.opacity = '0.15';
+                    emoji.style.transform = `rotate(${45}deg)`;
+                }, 300);
+            });
+        }
+        
+        // Обработчики для переключателей
+        modeBtns.forEach(btn => {
+            btn.addEventListener('click', function() {
+                // Убирает активный класс у всех кнопок
+                modeBtns.forEach(b => b.classList.remove('active'));
+                // Добавляет активный класс нажатой кнопке
+                this.classList.add('active');
+                
+                const mode = this.dataset.mode;
+                modeInput.value = mode;
+                
+                // Обновляет информацию о режиме
+                const info = modeDescriptions[mode];
+                modeInfo.innerHTML = `
+                    <i>${info.icon} ${info.title}</i>
+                    ${info.description}
+                `;
+                
+                // Добавляет анимацию для авто-режима
+                if (mode === 'auto') {
+                    modeInfo.classList.add('auto-mode-active');
+                } else {
+                    modeInfo.classList.remove('auto-mode-active');
+                }
+                
+                // Обновляем эмодзи на заднем плане
+                updateBackgroundEmojis(mode);
+            });
+        });
+        
+        // Имя выбранного файла
+        fileInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                // Проверка расширения файла
+                if (!file.name.endsWith('.txt')) {
+                    fileInfo.textContent = '❌ Пожалуйста, выберите файл с расширением .txt';
+                    fileInfo.classList.remove('has-file');
+                    fileInfo.style.background = '#ffebee';
+                    fileInfo.style.color = '#c62828';
+                    return;
+                }
+                
+                fileInfo.textContent = `📄 Выбран файл: ${file.name} (${(file.size / 1024).toFixed(2)} KB)`;
+                fileInfo.classList.add('has-file');
+                fileInfo.style.background = '';
+                fileInfo.style.color = '';
+            } else {
+                fileInfo.textContent = 'Выберите .txt файл для конвертации';
+                fileInfo.classList.remove('has-file');
+            }
+        });
+        
+        // Дополнительная валидация перед отправкой формы
+        document.querySelector('form').addEventListener('submit', function(e) {
+            if (!fileInput.files[0]) {
+                e.preventDefault();
+                alert('Пожалуйста, выберите файл для загрузки');
+            } else if (!fileInput.files[0].name.endsWith('.txt')) {
+                e.preventDefault();
+                alert('Пожалуйста, выберите файл с расширением .txt');
+            }
+        });
+        
+        // Эффект при наведении на контейнер
+        document.querySelector('.upload-container').addEventListener('mouseenter', function() {
+            this.style.transform = 'scale(1.01)';
+        });
+        
+        document.querySelector('.upload-container').addEventListener('mouseleave', function() {
+            this.style.transform = 'scale(1)';
+        });
+        
+        // Наклон для каждого эмодзи
+        document.querySelectorAll('.floating-emoji').forEach(emoji => {
+            emoji.style.transform = `rotate(${25}deg)`;
+        });
+    </script>
+</body>
+</html>
