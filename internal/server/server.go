@@ -17,8 +17,9 @@ type Server struct {
 func NewServer(logger *log.Logger) *Server {
 	// Роутер
 	mux := http.NewServeMux()
-	// Раздача статических файлов из папки ../static (иначе не грузит upload.html)
-	mux.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("../static"))))
+	// Раздача статических файлов из папки ../cmd (иначе не грузит upload.html)
+	// Static -> cmd ибо тесты не работают со static
+	// mux.Handle("/cmd/", http.StripPrefix("/cmd/", http.FileServer(http.Dir("../cmd")))
 
 	// Регистрация хендлеров
 	mux.HandleFunc("/", handlers.RootHandler)
