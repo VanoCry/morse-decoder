@@ -19,7 +19,7 @@ func RootHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	// Чтение файла index.html
-	indexHTML, err := os.ReadFile("../cmd/index.html")
+	indexHTML, err := os.ReadFile("index.html")
 	if err != nil {
 		http.Error(w, "Не удалось прочитать файл index.html", http.StatusInternalServerError)
 		return
@@ -41,21 +41,23 @@ func UploadHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Парсим форму
-	if err := r.ParseMultipartForm(10 << 20); err != nil {
+	err := r.ParseMultipartForm(10 << 20)
+	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	// Получаем режим
-	mode := 0 // auto
-	switch r.FormValue("mode") {
+	modeStr := r.FormValue("mode")
+	mode := 0
+	switch modeStr {
 	case "text-to-morse":
 		mode = 1
 	case "morse-to-text":
 		mode = 2
 	}
 
-	// Получаем файл из формы
+	// ПОЛУЧАЕМ ФАЙЛ ИЗ ФОРМЫ - НЕ С ДИСКА!
 	file, _, err := r.FormFile("myFile")
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -77,16 +79,10 @@ func UploadHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Создаем папку если нужно
-	os.MkdirAll(filePathForSavedFiles, 0755)
-
-	// Сохраняем результат в файл
+	// Сохраняем файл (опционально)
+	os.MkdirAll("saved_files", 0755)
 	filename := fmt.Sprintf("converted_%d_%s.txt", mode, time.Now().Format("20060102_150405"))
-	fullPath := filepath.Join(filePathForSavedFiles, filename)
-	if err := os.WriteFile(fullPath, []byte(result), 0644); err != nil {
-		http.Error(w, "Failed to create file", http.StatusInternalServerError)
-		return
-	}
+	os.WriteFile(filepath.Join("saved_files", filename), []byte(result), 0644)
 
 	// Возвращаем результат
 	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
