@@ -21,7 +21,30 @@ func RootHandler(w http.ResponseWriter, r *http.Request) {
 	// Чтение файла index.html
 	indexHTML, err := os.ReadFile("index.html")
 	if err != nil {
-		http.Error(w, "Не удалось прочитать файл index.html", http.StatusInternalServerError)
+		//Возврат стандартного html
+		w.Header().Set("Content-Type", "text/html; charset=utf-8")
+		defaultHTML := `<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Morse Converter</title>
+</head>
+<body>
+    <h1>Morse Converter</h1>
+    <form enctype="multipart/form-data" action="/upload" method="post">
+        <input type="file" name="myFile" required>
+        <select name="mode">
+            <option value="auto">Auto</option>
+            <option value="text-to-morse">Text to Morse</option>
+            <option value="morse-to-text">Morse to Text</option>
+        </select>
+        <input type="submit" value="Convert">
+    </form>
+</body>
+</html>`
+		// Отправка HTML
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(defaultHTML))
 		return
 	}
 	// Установка заголовка Content-Type
